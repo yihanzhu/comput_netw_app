@@ -1,10 +1,80 @@
-version: "3"
+version: '3'
+
 services:
-  frontend:
-    build: ./frontend
-    ports:
-      - "3000:3000"
-  backend:
-    build: ./backend
+  backend-master:
+    build:
+      context: ./master/backend
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
+
+  frontend-master:
+    build:
+      context: ./master/frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_TYPE=MASTER
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend-master
+
+  backend-slave-id1:
+    build:
+      context: ./slave/backend
+      dockerfile: Dockerfile
+    environment:
+      - SLAVE_ID=id1
+    ports:
+      - '5100:5000'
+
+  frontend-slave-id1:
+    build:
+      context: ./slave/frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_TYPE=SLAVE
+    ports:
+      - '3100:3000'
+    depends_on:
+      - backend-slave-id1
+
+  backend-slave-id2:
+    build:
+      context: ./slave/backend
+      dockerfile: Dockerfile
+    environment:
+      - SLAVE_ID=id2
+    ports:
+      - '5101:5000'
+
+  frontend-slave-id2:
+    build:
+      context: ./slave/frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_TYPE=SLAVE
+    ports:
+      - '3101:3000'
+    depends_on:
+      - backend-slave-id2
+
+  backend-slave-id3:
+    build:
+      context: ./slave/backend
+      dockerfile: Dockerfile
+    environment:
+      - SLAVE_ID=id3
+    ports:
+      - '5102:5000'
+
+  frontend-slave-id3:
+    build:
+      context: ./slave/frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_TYPE=SLAVE
+    ports:
+      - '3102:3000'
+    depends_on:
+      - backend-slave-id3
