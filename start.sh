@@ -2,13 +2,19 @@
 
 # turn off to avoid conflicts when changing student ids
 docker-compose down
+docker-compose build
 
 # List of student IDs
-student_ids=("id1" "id2" "id3")
+# student_ids=("fake" "id1" "id2" "id3")
 
 # Base port numbers
 backend_base_port=5100
 frontend_base_port=3100
+
+#test params
+student_ids=("fake")
+# backend_base_port=5001
+# frontend_base_port=3001
 
 # Base docker-compose.yml content with master services
 cat <<EOF > docker-compose.yml
@@ -65,4 +71,4 @@ EOF
 done
 
 
-docker-compose up -d
+docker-compose up -d 

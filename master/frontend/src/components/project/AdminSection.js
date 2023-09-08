@@ -1,20 +1,6 @@
-import React, { useEffect } from "react";
+import React from "react";
 
 const AdminSection = ({ selectedTab, selectedTabName }) => {
-
-  useEffect(() => {
-    fetch("/admin-change", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        selectedTab,
-        selectedTabName,
-      }),
-    });
-  }, [selectedTab, selectedTabName]);
-
   return (
     <div className="flex items-center justify-center p-2 bg-gray-200 border rounded-md text-sm font-bold">
       <span>Chosen tab: {selectedTabName}</span>

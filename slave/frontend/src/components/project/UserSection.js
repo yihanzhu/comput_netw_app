@@ -14,39 +14,46 @@ const UserSection = ({
   const [file, setFile] = useState(null);
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const chosenFile = e.target.files[0];
+    console.log("Selected file:", chosenFile);
+    setFile(chosenFile);
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (file) {
       const data = new FormData();
-      data.append('file', file);
-      data.append('part', selectedTab);
-  
-      fetch('/api/upload', {  // Use relative URL here
-        method: 'POST',
-        body: data,
-      })
-      .then((response) => {
+      data.append("file", file);
+      data.append("part", selectedTab);
+
+      try {
+        const response = await fetch("http://localhost:5100/api/upload", {
+          // Use relative URL here
+          method: "POST",
+          body: data,
+        });
+
+        const responseData = await response.json();
+
         if (response.ok) {
-          setMessage("File uploaded successfully");
+          setMessage(responseData.message);
         } else {
-          setMessage("Failed to upload file");
-          console.log(response);
+          setMessage("Failed to upload file. Reason: " + responseData.message);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Fetch Error:", error);
-      });
-  
+        setMessage("An error occurred while uploading the file.");
+      }
+
       const newFileUploads = [...fileUploads];
-      newFileUploads[selectedTab] = true; // update the tab index with file upload
+      newFileUploads[selectedTab] = true;
       setFileUploads(newFileUploads);
+    } else {
+      setMessage("No file selected.");
     }
   };
-  
 
-  const isUploadEnabled = confirmedTabs.includes(selectedTab);
+  // const isUploadEnabled = confirmedTabs.includes(selectedTab);
+  const isUploadEnabled = true;
 
   return (
     <div className="flex flex-col items-center justify-center p-4 bg-gray-200 border rounded-md">

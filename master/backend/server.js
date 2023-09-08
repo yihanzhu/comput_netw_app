@@ -1,79 +1,75 @@
-const express = require('express');
-const fileUpload = require('express-fileupload');
-const path = require('path');
+
+const fileUpload = require("express-fileupload");
+const path = require("path");
+const cors = require("cors");
+const axios = require("axios");
+const WebSocket = require('ws');
+// const fetch = require('node-fetch');  // Import this at the top with other imports
+
+
+
+const express = require("express");
+const http = require("http");
 const { Server } = require("socket.io");
-const http = require('http');
+// ... rest of your imports ...
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
 
-const uploadPath = path.join(__dirname, 'codebase/uploads');
-const cors = require('cors');
 
-app.use(cors());
+const uploadPath = path.join(__dirname, "codebase/uploads");
+
+app.use(
+  cors({
+    origin: "*",
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(fileUpload());
 
-// Socket.io connection
-io.on('connection', (socket) => {
-  console.log('a user connected');
-  
-  socket.on('update-view', (data) => {
-      io.emit('update-view', data); // This broadcasts the message to all connected clients.
-  });
-
-  socket.on('disconnect', () => {
-      console.log('user disconnected');
-  });
-});
-
-// Store client connections
-let clients = [];
-
-// Endpoint to receive changes from the master
-app.post('/admin-change', (req, res) => {
-  const { selectedTab, selectedTabName } = req.body;
-  // Inform all clients about the change
-  clients.forEach(client => {
-    client.write(`data: ${JSON.stringify({ selectedTab, selectedTabName })}\n\n`);
-  });
-  res.sendStatus(200);
-});
-
-// Endpoint for slaves to listen to changes
-app.get('/listen-to-changes', (req, res) => {
-  res.set({
-    "Cache-Control": "no-cache",
-    "Content-Type": "text/event-stream",
-    "Connection": "keep-alive"
-  });
-  res.flushHeaders();
-
-  clients.push(res);
-
-  req.on('close', () => {
-    clients = clients.filter(client => client !== res);
-  });
-});
-
-
-// Routes
-app.post('/api/upload', function (req, res) {
+app.post("/api/upload", function (req, res) {
   if (!req.files || Object.keys(req.files).length === 0) {
-    return res.status(400).send('No files were uploaded.');
+    return res.status(400).json({ message: "No files were uploaded." });
   }
 
-  // The name of the input field is used to retrieve the uploaded file
   let sampleFile = req.files.file;
-
-  // Use the mv() method to place the file in upload directory (i.e. "uploads")
   sampleFile.mv(path.join(uploadPath, sampleFile.name), function (err) {
-    if (err)
-      return res.status(500).send(err);
-
-    res.send('File uploaded!');
+    if (err) {
+      console.error("File upload error:", err);
+      return res
+        .status(500)
+        .json({ message: "Server error during file upload." });
+    }
+    res.json({ message: "File uploaded!" });
   });
 });
 
-app.listen(5000, () => console.log('Server is running on port 5000'));
+// ... other required modules ...
+io.on("connection", (socket) => {
+  console.log("Master Backend Connected");
+
+  socket.on("tabConfirmed", async (tabIndex) => {
+    console.log(`Tab ${tabIndex} confirmed from Master Frontend`);
+    // Inform slave backend
+    try {
+        const response = await axios.post('http://backend-slave:5100/confirmTab', {
+            tabIndex
+        });
+        if (response.data.success) {
+            console.log("Notified slave backend about tab confirmation");
+        }
+    } catch (error) {
+        console.error("Error communicating with slave backend:", error);
+    }
+});
+
+});
+
+server.listen(5000, () => console.log("Server is running on port 5000"));

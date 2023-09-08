@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import io from "socket.io-client";
+
 import Window from "@/components/project/Window";
-import AdminSection from "@/components/project/AdminSection";
 import UserSection from "@/components/project/UserSection";
 import SendMessage from "@/components/project/SendMessage";
 import DisplayMessage from "@/components/project/DisplayMessage";
-
-const IS_MASTER = process.env.REACT_APP_NODE_TYPE === "MASTER";
 
 const Page = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -34,20 +33,15 @@ const Page = () => {
     setSelectedTabName(tabName);
   };
 
-  const handleConfirm = () => {
-    if (isAdmin && selectedTab !== null) {
-      const newAdminTabColors = [...adminTabColors];
-      newAdminTabColors[selectedTab] = "red";
-      setAdminTabColors(newAdminTabColors);
-      setUserTabColors(newAdminTabColors); // update user tab colors
-      setConfirmedTabs([...confirmedTabs, selectedTab]); // add the selected tab to confirmedTabs
-    }
-  };
-
   const handleUpload = (tabIndex, fileName, side) => {
+    if(!confirmedTabs.includes(tabIndex)) {
+        setMessage(`Cannot upload to tab ${tabIndex}. It's not confirmed yet!`);
+        return;
+    }
+    
     const newFileUploads =
       side === "Sender" ? [...senderFileUploads] : [...receiverFileUploads];
-    newFileUploads[tabIndex] = true; // update the tab index with file upload
+    newFileUploads[tabIndex] = true;
     side === "Sender"
       ? setSenderFileUploads(newFileUploads)
       : setReceiverFileUploads(newFileUploads);
@@ -56,7 +50,7 @@ const Page = () => {
     setMessage(
       `File ${fileName} has been uploaded to ${side}'s ${selectedTabName}.`
     );
-  };
+};
 
   const handleSend = (message) => {
     if (
@@ -82,32 +76,31 @@ const Page = () => {
     setReceiverFileUploads(Array(6).fill(false));
   };
 
+useEffect(() => {
+    const socket = io("http://localhost:5100");
+
+    socket.on("connect", () => {
+        console.log("Connected to Slave Backend");
+    });
+
+    socket.on("updateTab", (tabIndex) => {
+      const newAdminTabColors = [...adminTabColors];
+      newAdminTabColors[tabIndex] = "red";
+      setAdminTabColors(newAdminTabColors);
+      setUserTabColors(newAdminTabColors);
+      setConfirmedTabs(prevTabs => [...prevTabs, tabIndex]);  // Mark the tab as confirmed
+      console.log(`Tab ${tabIndex} color updated from Slave Backend`);
+  });
+
+    // Cleanup
+    return () => {
+        socket.disconnect();
+    };
+}, []);
+    
+
   return (
     <div className="p-8">
-      <div className="mb-4 flex items-center justify-between">
-        <button
-          onClick={() => setIsAdmin(!isAdmin)}
-          className="p-2 bg-blue-500 text-white  rounded-md "
-          hidden={!IS_MASTER} // Hide this button on slaves
-        >
-          Switch to {isAdmin ? "User" : "Admin"}
-        </button>
-        {isAdmin && (
-          <>
-            <AdminSection
-              selectedTab={selectedTab}
-              selectedTabName={selectedTabName}
-            />
-            <button
-              onClick={handleConfirm}
-              className="p-2 bg-blue-500 text-white ml-4 rounded-md "
-            >
-              Confirm
-            </button>
-          </>
-        )}
-      </div>
-
       <div className="grid grid-cols-2 sm:grid-cols-1 gap-4">
         <Window
           name="Sender"
@@ -128,38 +121,32 @@ const Page = () => {
           fileUploads={receiverFileUploads}
         />
 
-        {isAdmin ? (
-          <></>
-        ) : (
-          <>
-            <UserSection
-              selectedTab={selectedTab}
-              onUpload={handleUpload}
-              tabColors={isAdmin ? adminTabColors : userTabColors}
-              side={"Sender"}
-              fileUploads={senderFileUploads}
-              setFileUploads={setSenderFileUploads}
-              setMessage={setMessage}
-              selectedTabName={selectedTabName}
-              confirmedTabs={confirmedTabs}
-            />
+        <UserSection
+          selectedTab={selectedTab}
+          onUpload={handleUpload}
+          tabColors={isAdmin ? adminTabColors : userTabColors}
+          side={"Sender"}
+          fileUploads={senderFileUploads}
+          setFileUploads={setSenderFileUploads}
+          setMessage={setMessage}
+          selectedTabName={selectedTabName}
+          confirmedTabs={confirmedTabs}
+        />
 
-            <UserSection
-              selectedTab={selectedTab}
-              onUpload={handleUpload}
-              tabColors={isAdmin ? adminTabColors : userTabColors}
-              side={"Receiver"}
-              fileUploads={receiverFileUploads}
-              setFileUploads={setReceiverFileUploads}
-              setMessage={setMessage}
-              selectedTabName={selectedTabName}
-              confirmedTabs={confirmedTabs}
-            />
+        <UserSection
+          selectedTab={selectedTab}
+          onUpload={handleUpload}
+          tabColors={isAdmin ? adminTabColors : userTabColors}
+          side={"Receiver"}
+          fileUploads={receiverFileUploads}
+          setFileUploads={setReceiverFileUploads}
+          setMessage={setMessage}
+          selectedTabName={selectedTabName}
+          confirmedTabs={confirmedTabs}
+        />
 
-            <SendMessage onSend={handleSend} />
-            <DisplayMessage message={message} />
-          </>
-        )}
+        <SendMessage onSend={handleSend} />
+        <DisplayMessage message={message} />
       </div>
     </div>
   );

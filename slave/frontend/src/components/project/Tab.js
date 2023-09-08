@@ -3,7 +3,6 @@ import React from "react";
 const Tab = ({
   color,
   onClick,
-  isAdmin,
   children,
   isSelected,
   isUploaded,
@@ -25,19 +24,17 @@ const Tab = ({
       break;
   }
   if (isSelected) {
-    colorClass = "bg-red-500"; // selected by admin
+    colorClass = "bg-red-500";
   }
   if (isUploaded) {
-    colorClass = "bg-yellow-500"; // file has been uploaded
+    colorClass = "bg-yellow-500";
   }
   if (isSend) {
-    colorClass = "bg-green-500"; // file has been uploaded
+    colorClass = "bg-green-500";
   }
   return (
     <div
-      className={`p-4  rounded-md cursor-${
-        isAdmin ? "pointer" : "default"
-      } text-center ${colorClass}`}
+      className={`p-4  rounded-md cursor-default text-center ${colorClass}`}
       onClick={onClick}
     >
       {children}
