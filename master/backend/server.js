@@ -1,12 +1,14 @@
+require('dotenv').config();
+const mongoose = require('mongoose');
+const Assignment = require('./models/Assignment');
+const Message = require('./models/Message');
 
 const fileUpload = require("express-fileupload");
 const path = require("path");
 const cors = require("cors");
 const axios = require("axios");
-const WebSocket = require('ws');
+const WebSocket = require("ws");
 // const fetch = require('node-fetch');  // Import this at the top with other imports
-
-
 
 const express = require("express");
 const http = require("http");
@@ -21,7 +23,6 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
-
 
 const uploadPath = path.join(__dirname, "codebase/uploads");
 
@@ -51,6 +52,17 @@ app.post("/api/upload", function (req, res) {
   });
 });
 
+mongoose.connect(process.env.DATABASE_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+mongoose.connection.on('error', err => {
+  console.error(err);
+});
+mongoose.connection.once('open', () => {
+  console.log("Connected to database");
+});
+
 // ... other required modules ...
 io.on("connection", (socket) => {
   console.log("Master Backend Connected");
@@ -59,17 +71,60 @@ io.on("connection", (socket) => {
     console.log(`Tab ${tabIndex} confirmed from Master Frontend`);
     // Inform slave backend
     try {
-        const response = await axios.post('http://backend-slave:5100/confirmTab', {
-            tabIndex
-        });
-        if (response.data.success) {
-            console.log("Notified slave backend about tab confirmation");
+      const response = await axios.post(
+        "http://backend-slave:5100/confirmTab",
+        {
+          tabIndex,
         }
+      );
+      if (response.data.success) {
+        console.log("Notified slave backend about tab confirmation");
+      }
     } catch (error) {
-        console.error("Error communicating with slave backend:", error);
+      console.error("Error communicating with slave backend:", error);
     }
-});
+  });
 
+  socket.on("createAssignment", async (data) => {
+    try {
+      const assignment = new Assignment(data);
+      await assignment.save();
+      console.log("Assignment created and saved!");
+      socket.emit("assignmentCreated", assignment);
+    } catch (error) {
+      console.error("Error creating assignment:", error);
+    }
+  });
+  
+  socket.on("fetchAllAssignments", async () => {
+    try {
+      const assignments = await Assignment.find();
+      socket.emit("updateAssignments", assignments);
+    } catch (error) {
+      console.error("Error fetching assignments:", error);
+    }
+  });
+  
+  socket.on("fetchMailbox", async () => {
+    try {
+      const messages = await Message.find();
+      socket.emit("updateMailbox", messages);
+    } catch (error) {
+      console.error("Error fetching mailbox:", error);
+    }
+  });
+  
+  socket.on("sendReply", async (data) => {
+    // Save the reply as a new message to the mailbox
+    try {
+      const reply = new Message(data);
+      await reply.save();
+      console.log("Reply sent and saved!");
+      socket.emit("replyStatus", reply);
+    } catch (error) {
+      console.error("Error sending reply:", error);
+    }
+  });
 });
 
 server.listen(5000, () => console.log("Server is running on port 5000"));
