@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import AssignmentsContext from "./context/assignmentsContext";
 
 const InstructorDashboard = () => {
   const dummyMailbox = [
-    { id: 1, studentId: "1001", text: "I have a question about TCP-IP." },
-    { id: 2, studentId: "1002", text: "Can you provide more resources?" },
+    { id: 1, studentId: "1001", text: "Dummy: I have a question about TCP-IP." },
+    { id: 2, studentId: "1002", text: "Dummy: Can you provide more resources?" },
   ];
 
   const [mailbox, setMailbox] = useState(dummyMailbox);
@@ -18,6 +20,10 @@ const InstructorDashboard = () => {
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [showIDModal, setShowIDModal] = useState(false);
   const [searchID, setSearchID] = useState("");
+  const [assignmentName, setAssignmentName] = useState("");
+  const { assignments } = useContext(AssignmentsContext);
+
+  const router = useRouter();
 
   const sendReply = () => {
     // Logic for sending reply goes here
@@ -28,14 +34,33 @@ const InstructorDashboard = () => {
     if (
       !createdAssignments.find((assignment) => assignment.template === template)
     ) {
-      const newAssignment = {
-        template,
-        link: `/TCP-IP`,
-      };
-      setCreatedAssignments((prev) => [...prev, newAssignment]);
+      // This redirects the user to the template page when a template is selected
+      router.push("/template/TCP-IP");
     }
-    setShowAssignmentModal(false);
   };
+
+  const saveAssignment = (name) => {
+    // Logic to save the assignment
+    const newAssignment = {
+      name,
+      link: `/template/TCP-IP`,
+    };
+    setCreatedAssignments((prev) => [...prev, newAssignment]);
+  };
+
+  const publishAssignment = (assignment) => {
+    // Logic to publish the assignment
+    console.log(`Publishing ${assignment.template}`);
+  };
+
+  useEffect(() => {
+    const { savedAssignment } = router.query;
+    const newAssignment = {
+      name: savedAssignment,
+      link: `/TCP-IP`,
+    };
+    setCreatedAssignments((prev) => [...prev, newAssignment]);
+  }, [router.query]);
 
   return (
     <div className="p-8">
@@ -168,14 +193,17 @@ const InstructorDashboard = () => {
             <div className="mt-4">
               <h3 className="text-lg font-bold mb-4">Created Assignments:</h3>
               <ul>
-                {createdAssignments.map((assignment, index) => (
+                {assignments.map((assignment, index) => (
                   <li key={index} className="mb-2">
-                    {assignment.template}
+                    {assignment.name}
                     <Link href={assignment.link}>
                       <span className="text-blue-500 cursor-pointer ml-2">
                         Access
                       </span>
                     </Link>
+                    <button onClick={() => publishAssignment(assignment)}>
+                      Publish Now
+                    </button>
                   </li>
                 ))}
               </ul>
