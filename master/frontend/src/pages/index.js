@@ -2,17 +2,29 @@ import React, { useState, useEffect, useContext } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import AssignmentsContext from "./context/assignmentsContext";
+import io from "socket.io-client";
 
 const InstructorDashboard = () => {
   const dummyMailbox = [
-    { id: 1, studentId: "1001", text: "Dummy: I have a question about TCP-IP." },
-    { id: 2, studentId: "1002", text: "Dummy: Can you provide more resources?" },
+    {
+      id: 1,
+      studentId: "1001",
+      text: "Dummy: I have a question about TCP-IP.",
+    },
+    {
+      id: 2,
+      studentId: "1002",
+      text: "Dummy: Can you provide more resources?",
+    },
   ];
 
   const [mailbox, setMailbox] = useState(dummyMailbox);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [reply, setReply] = useState("");
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishTime, setPublishTime] = useState("immediate");
+  const [futureDateTime, setFutureDateTime] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [template, setTemplate] = useState("TCP-IP");
   const [studentIDs, setStudentIDs] = useState([]);
@@ -49,18 +61,48 @@ const InstructorDashboard = () => {
   };
 
   const publishAssignment = (assignment) => {
-    // Logic to publish the assignment
-    console.log(`Publishing ${assignment.template}`);
+    console.log(`Publishing ${assignment.name}`);
+    setShowPublishModal(true);
+
+    // Emit the event to the Instructor backend
+    socket.emit("publishAssignment", assignment);
   };
 
+  // Set up the connection inside the component.
+  const socket = io("http://localhost:5000"); // The address of your backend service
+
+  // Inside your useEffect, you can listen to events
   useEffect(() => {
-    const { savedAssignment } = router.query;
-    const newAssignment = {
-      name: savedAssignment,
-      link: `/TCP-IP`,
+    socket.on("updateAssignments", (newAssignments) => {
+      setCreatedAssignments(newAssignments);
+    });
+
+    socket.on("updateMailbox", (newMailbox) => {
+      setMailbox(newMailbox);
+    });
+
+    socket.on("assignmentPublished", (publishedAssignment) => {
+      console.log("assignmentPublished");
+      // Update the local state with the published assignment
+      setCreatedAssignments((prevAssignments) =>
+        prevAssignments.map((assignment) =>
+          assignment._id === publishedAssignment._id
+            ? publishedAssignment
+            : assignment
+        )
+      );
+    });
+
+    // Emit events when needed
+    socket.emit("fetchAllAssignments");
+    socket.emit("fetchMailbox");
+
+    return () => {
+      socket.disconnect(); // Disconnect the socket when the component unmounts
     };
-    setCreatedAssignments((prev) => [...prev, newAssignment]);
-  }, [router.query]);
+  }, []);
+
+  // Inside InstructorDashboard Component
 
   return (
     <div className="p-8">
@@ -194,7 +236,7 @@ const InstructorDashboard = () => {
               <h3 className="text-lg font-bold mb-4">Created Assignments:</h3>
               <ul>
                 {assignments.map((assignment, index) => (
-                  <li key={index} className="mb-2">
+                  <li key={index} className="mb-2 flex justify-between ">
                     {assignment.name}
                     <Link href={assignment.link}>
                       <span className="text-blue-500 cursor-pointer ml-2">
@@ -202,8 +244,72 @@ const InstructorDashboard = () => {
                       </span>
                     </Link>
                     <button onClick={() => publishAssignment(assignment)}>
-                      Publish Now
+                      Publish
                     </button>
+                    {showPublishModal && (
+                      <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center">
+                        <div className="bg-white p-4 rounded-md w-1/3">
+                          <h3 className="text-lg font-bold mb-4">
+                            Publish Assignment
+                          </h3>
+
+                          <div className="mb-4">
+                            <label className="block mb-2">Publish Time:</label>
+                            <select
+                              className="w-full p-2 rounded-md border"
+                              onChange={(e) => setPublishTime(e.target.value)}
+                              value={publishTime}
+                            >
+                              <option value="immediate">Immediate</option>
+                              <option value="future">Future</option>
+                            </select>
+                          </div>
+
+                          {publishTime === "future" && (
+                            <div className="mb-4">
+                              <label className="block mb-2">
+                                Select Date & Time:
+                              </label>
+                              <input
+                                type="datetime-local"
+                                className="w-full p-2 rounded-md border"
+                                value={futureDateTime}
+                                onChange={(e) =>
+                                  setFutureDateTime(e.target.value)
+                                }
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => {
+                                if (
+                                  publishTime === "future" &&
+                                  !futureDateTime
+                                ) {
+                                  alert("Please select a future date and time");
+                                  return;
+                                }
+
+                                // Emit to backend with either 'immediate' or the selected futureDateTime
+                                // socket.emit('publishAssignment', { assignment: selectedAssignment, publishTime: publishTime === 'immediate' ? 'immediate' : futureDateTime });
+                                setShowPublishModal(false);
+                              }}
+                              className="p-2 bg-blue-500 text-white rounded-md mr-2"
+                            >
+                              Publish
+                            </button>
+                            <button
+                              onClick={() => setShowPublishModal(false)}
+                              className="p-2 bg-red-500 text-white rounded-md"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

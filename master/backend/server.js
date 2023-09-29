@@ -1,7 +1,7 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
-const Assignment = require('./models/Assignment');
-const Message = require('./models/Message');
+// require('dotenv').config();
+// const mongoose = require('mongoose');
+const Assignment = require("./models/Assignment");
+const Message = require("./models/Message");
 
 const fileUpload = require("express-fileupload");
 const path = require("path");
@@ -52,38 +52,38 @@ app.post("/api/upload", function (req, res) {
   });
 });
 
-mongoose.connect(process.env.DATABASE_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
-mongoose.connection.on('error', err => {
-  console.error(err);
-});
-mongoose.connection.once('open', () => {
-  console.log("Connected to database");
-});
+// mongoose.connect(process.env.DATABASE_URL, {
+//   useNewUrlParser: true,
+//   useUnifiedTopology: true
+// });
+// mongoose.connection.on('error', err => {
+//   console.error(err);
+// });
+// mongoose.connection.once('open', () => {
+//   console.log("Connected to database");
+// });
 
 // ... other required modules ...
 io.on("connection", (socket) => {
   console.log("Master Backend Connected");
 
-  socket.on("tabConfirmed", async (tabIndex) => {
-    console.log(`Tab ${tabIndex} confirmed from Master Frontend`);
-    // Inform slave backend
-    try {
-      const response = await axios.post(
-        "http://backend-slave:5100/confirmTab",
-        {
-          tabIndex,
-        }
-      );
-      if (response.data.success) {
-        console.log("Notified slave backend about tab confirmation");
-      }
-    } catch (error) {
-      console.error("Error communicating with slave backend:", error);
-    }
-  });
+  // socket.on("tabConfirmed", async (tabIndex) => {
+  //   console.log(`Tab ${tabIndex} confirmed from Master Frontend`);
+  //   // Inform slave backend
+  //   try {
+  //     const response = await axios.post(
+  //       "http://backend-slave:5100/confirmTab",
+  //       {
+  //         tabIndex,
+  //       }
+  //     );
+  //     if (response.data.success) {
+  //       console.log("Notified slave backend about tab confirmation");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error communicating with slave backend:", error);
+  //   }
+  // });
 
   socket.on("createAssignment", async (data) => {
     try {
@@ -91,11 +91,14 @@ io.on("connection", (socket) => {
       await assignment.save();
       console.log("Assignment created and saved!");
       socket.emit("assignmentCreated", assignment);
+
+      // Notify student backend
+      io.to("http://localhost:5100").emit("updateAssignments", assignment); // Adjust the address to the correct one
     } catch (error) {
       console.error("Error creating assignment:", error);
     }
   });
-  
+
   socket.on("fetchAllAssignments", async () => {
     try {
       const assignments = await Assignment.find();
@@ -104,7 +107,21 @@ io.on("connection", (socket) => {
       console.error("Error fetching assignments:", error);
     }
   });
+
+  socket.on("publishAssignment", async (assignment) => {
+    try {
+      // Find the assignment in the database and update its published status
+      const updatedAssignment = await Assignment.findByIdAndUpdate(assignment._id, { published: true }, { new: true });
+      
+      // Notify the student backend of the published assignment
+      io.to('http://localhost:5100').emit('updateAssignments', updatedAssignment); // Adjust the address to the correct one
+      
+    } catch (error) {
+      console.error("Error publishing assignment:", error);
+    }
+  });
   
+
   socket.on("fetchMailbox", async () => {
     try {
       const messages = await Message.find();
@@ -113,7 +130,7 @@ io.on("connection", (socket) => {
       console.error("Error fetching mailbox:", error);
     }
   });
-  
+
   socket.on("sendReply", async (data) => {
     // Save the reply as a new message to the mailbox
     try {

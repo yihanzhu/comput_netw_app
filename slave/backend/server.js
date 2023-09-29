@@ -45,17 +45,22 @@ app.post("/api/upload", function (req, res) {
   });
 });
 
-app.post('/confirmTab', (req, res) => {
-  const tabIndex = req.body.tabIndex;
-  console.log(`Received tab ${tabIndex} confirmation from Master Backend`);
+// app.post('/confirmTab', (req, res) => {
+//   const tabIndex = req.body.tabIndex;
+//   console.log(`Received tab ${tabIndex} confirmation from Master Backend`);
 
-  // Emit to connected frontend clients
-  io.emit("updateTab", tabIndex);
-  res.json({ success: true });
-});
+//   // Emit to connected frontend clients
+//   io.emit("updateTab", tabIndex);
+//   res.json({ success: true });
+// });
 
 io.on("connection", (socket) => {
   console.log("Slave Backend Connected");
+
+  socket.on('updateAssignments', (updatedAssignment) => {
+    // Forward the updated assignment to all connected student frontends
+    socket.broadcast.emit('updateAssignments', updatedAssignment);
+  });
 });
 
 server.listen(5100, () => console.log("Server is running on port 5100"));
