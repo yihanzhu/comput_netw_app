@@ -1,6 +1,7 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useRouter } from "next/router";
-import AssignmentsContext from '../context/assignmentsContext';
+import AssignmentsContext from "../context/assignmentsContext";
+
 
 import Window from "@/components/project/Window";
 import UserSection from "@/components/project/UserSection";
@@ -10,24 +11,20 @@ import DisplayMessage from "@/components/project/DisplayMessage";
 const AssignmentPage = () => {
   const router = useRouter();
   const { assignmentName } = router.query;
-
   const { assignments } = useContext(AssignmentsContext);
 
-  // Fetch the specific assignment based on the URL's assignmentName
-  const currentAssignment = assignments.find(
-    (assignment) => assignment.name === assignmentName
-  );
-
-  if (!currentAssignment) return <div>Loading...</div>;
-
-  const { selectedTab: savedSelectedTab } = currentAssignment;
-  const [selectedTab, setSelectedTab] = useState(savedSelectedTab);
+  const [currentAssignment, setCurrentAssignment] = useState(null);
+  const [selectedTab, setSelectedTab] = useState(0); // Set default state
   const [selectedTabName, setSelectedTabName] = useState("");
   const [adminTabColors, setAdminTabColors] = useState(Array(6).fill("green"));
   const [message, setMessage] = useState("");
   const [confirmedTabs, setConfirmedTabs] = useState([]);
-  const [senderFileUploads, setSenderFileUploads] = useState(Array(6).fill(false));
-  const [receiverFileUploads, setReceiverFileUploads] = useState(Array(6).fill(false));
+  const [senderFileUploads, setSenderFileUploads] = useState(
+    Array(6).fill(false)
+  );
+  const [receiverFileUploads, setReceiverFileUploads] = useState(
+    Array(6).fill(false)
+  );
 
   const handleTabSelect = (tabIndex, tabName) => {
     const newAdminTabColors = [...adminTabColors];
@@ -39,14 +36,22 @@ const AssignmentPage = () => {
   };
 
   const handleUpload = (tabIndex, fileName, side) => {
-    const newFileUploads = side === "Sender" ? [...senderFileUploads] : [...receiverFileUploads];
+    const newFileUploads =
+      side === "Sender" ? [...senderFileUploads] : [...receiverFileUploads];
     newFileUploads[tabIndex] = true;
-    side === "Sender" ? setSenderFileUploads(newFileUploads) : setReceiverFileUploads(newFileUploads);
-    setMessage(`File ${fileName} has been uploaded to ${side}'s ${selectedTabName}.`);
+    side === "Sender"
+      ? setSenderFileUploads(newFileUploads)
+      : setReceiverFileUploads(newFileUploads);
+    setMessage(
+      `File ${fileName} has been uploaded to ${side}'s ${selectedTabName}.`
+    );
   };
 
   const handleSend = () => {
-    if (senderFileUploads.includes(true) && receiverFileUploads.includes(true)) {
+    if (
+      senderFileUploads.includes(true) &&
+      receiverFileUploads.includes(true)
+    ) {
       setMessage("Tests Passed");
     } else {
       setMessage("Tests Failed");
@@ -54,6 +59,21 @@ const AssignmentPage = () => {
     setSenderFileUploads(Array(6).fill(false));
     setReceiverFileUploads(Array(6).fill(false));
   };
+
+  useEffect(() => {
+    const assignment = assignments.find(
+      (assignment) => assignment.name === assignmentName
+    );
+    setCurrentAssignment(assignment);
+    if (assignment) {
+      setSelectedTab(assignment.selectedTab || 0); // Use a default value if selectedTab is not defined
+    }
+  }, [assignmentName, assignments]);
+
+  // Early return should come after all hooks have been called
+  if (!currentAssignment) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="p-8">
@@ -63,7 +83,9 @@ const AssignmentPage = () => {
           isAdmin={false}
           selectedTabFromAdmin={selectedTab}
           onTabSelect={handleTabSelect}
-          tabColors={Array(6).fill("green").map((color, index) => index === selectedTab ? "yellow" : color)}
+          tabColors={Array(6)
+            .fill("green")
+            .map((color, index) => (index === selectedTab ? "yellow" : color))}
           fileUploads={senderFileUploads}
         />
         <Window
@@ -71,7 +93,9 @@ const AssignmentPage = () => {
           isAdmin={false}
           selectedTabFromAdmin={selectedTab}
           onTabSelect={handleTabSelect}
-          tabColors={Array(6).fill("green").map((color, index) => index === selectedTab ? "yellow" : color)}
+          tabColors={Array(6)
+            .fill("green")
+            .map((color, index) => (index === selectedTab ? "yellow" : color))}
           fileUploads={receiverFileUploads}
         />
 

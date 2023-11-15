@@ -1,28 +1,20 @@
-# Use the official Node.js 14 image.
-# https://hub.docker.com/_/node
-FROM node:14
+# Use the official Node.js 18 image as a parent image
+FROM node:18
 
-# Sample for frontend's Dockerfile
-ARG NODE_TYPE
-ENV REACT_APP_NODE_TYPE=$NODE_TYPE
-
-# Create and change to the app directory.
+# Set the working directory
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json (if available)
+# Copy package.json and package-lock.json (or yarn.lock)
 COPY package*.json ./
 
-# Install production dependencies.
-RUN npm install --only=production
-
-RUN npm install socket.io-client
+# Install dependencies
 RUN npm install
 
-# Copy local code to the container image.
-COPY . ./
+# Copy the rest of the application's code
+COPY . .
 
-# Build the app
+# Build the Next.js application
 RUN npm run build
 
-# Run the web service on container startup.
-CMD [ "npm", "start" ]
+# Start the application
+CMD ["npm", "start"]

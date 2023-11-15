@@ -9,12 +9,12 @@ const InstructorDashboard = () => {
     {
       id: 1,
       studentId: "1001",
-      text: "Dummy: I have a question about TCP-IP.",
+      text: "I have a question about FTP.",
     },
     {
       id: 2,
       studentId: "1002",
-      text: "Dummy: Can you provide more resources?",
+      text: "Can you provide more resources?",
     },
   ];
 
@@ -100,7 +100,7 @@ const InstructorDashboard = () => {
     return () => {
       socket.disconnect(); // Disconnect the socket when the component unmounts
     };
-  }, []);
+  }, [socket]);
 
   // Inside InstructorDashboard Component
 
@@ -236,14 +236,20 @@ const InstructorDashboard = () => {
               <h3 className="text-lg font-bold mb-4">Created Assignments:</h3>
               <ul>
                 {assignments.map((assignment, index) => (
-                  <li key={index} className="mb-2 flex justify-between ">
-                    {assignment.name}
-                    <Link href={assignment.link}>
+                  <li
+                    key={index}
+                    className="mb-2 flex justify-between items-center"
+                  >
+                    <span className="flex-1 truncate">{assignment.name}</span>
+                    <Link href={assignment.link} className="flex-shrink-0 ml-4">
                       <span className="text-blue-500 cursor-pointer ml-2">
                         Access
                       </span>
                     </Link>
-                    <button onClick={() => publishAssignment(assignment)}>
+                    <button
+                      onClick={() => publishAssignment(assignment)}
+                      className="text-blue-500 cursor-pointer ml-4 flex-shrink-0"
+                    >
                       Publish
                     </button>
                     {showPublishModal && (

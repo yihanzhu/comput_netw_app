@@ -1,88 +1,40 @@
-# version: '3'
-
-# services:
-#   backend-master:
-#     build:
-#       context: ./master/backend
-#       dockerfile: Dockerfile
-#     ports:
-#       - "5000:5000"
-#     networks:
-#       - app-network
-
-#   frontend-master:
-#     build:
-#       context: ./master/frontend
-#       dockerfile: Dockerfile
-#       args:
-#         - NODE_TYPE=MASTER
-#     ports:
-#       - "3000:3000"
-#     depends_on:
-#       - backend-master
-#     networks:
-#       - app-network
-
-#   backend-slave-fake:
-#     build:
-#       context: ./slave/backend
-#       dockerfile: Dockerfile
-#     environment:
-#       - SLAVE_ID=fake
-#     ports:
-#       - '5100:5100'
-#     networks:
-#       - app-network
-
-#   frontend-slave-fake:
-#     build:
-#       context: ./slave/frontend
-#       dockerfile: Dockerfile
-#       args:
-#         - NODE_TYPE=SLAVE
-#     ports:
-#       - '3100:3100'
-#     depends_on:
-#       - backend-slave-fake
-#     networks:
-#       - app-network
-
-# networks:
-#   app-network:
-#     driver: bridge
-
 version: '3'
+
 services:
   backend-master:
     build:
       context: ./master/backend
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
-    networks:
-      - mynetwork
+
   frontend-master:
     build:
       context: ./master/frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_TYPE=MASTER
     ports:
       - "3000:3000"
-    networks:
-      - mynetwork
-  backend-slave:
+    depends_on:
+      - backend-master
+
+  backend-slave-fake:
     build:
       context: ./slave/backend
+      dockerfile: Dockerfile
+    environment:
+      - SLAVE_ID=fake
     ports:
-      - "5100:5100"
-    networks:
-      - mynetwork
-  frontend-slave:
+      - '5100:5000'
+
+  frontend-slave-fake:
     build:
       context: ./slave/frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_TYPE=SLAVE
     ports:
-      - "3100:3000"
-    networks:
-      - mynetwork
-
-
-networks:
-  mynetwork:
-    driver: bridge
+      - '3100:3000'
+    depends_on:
+      - backend-slave-fake

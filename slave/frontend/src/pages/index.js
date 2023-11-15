@@ -10,12 +10,12 @@ const StudentDashboard = () => {
   const dummyAssignments = [
     {
       id: 1,
-      name: "1",
+      name: "FTP",
       link: `/assignments/1`,
     },
     {
       id: 2,
-      name: "2",
+      name: "HTTP",
       link: `/assignments/2`,
     },
   ];
@@ -33,15 +33,18 @@ const StudentDashboard = () => {
 
   // Inside your useEffect, you can listen to events.
   useEffect(() => {
-    socket.on('newPublishedAssignment', (publishedAssignment) => {
-        console.log("newPublishedAssignment");
-        setAssignments((prevAssignments) => [...prevAssignments, publishedAssignment]);
-      });
+    socket.on("newPublishedAssignment", (publishedAssignment) => {
+      console.log("newPublishedAssignment");
+      setAssignments((prevAssignments) => [
+        ...prevAssignments,
+        publishedAssignment,
+      ]);
+    });
 
     return () => {
       socket.disconnect(); // Disconnect the socket when the component unmounts
     };
-  }, []);
+  }, [socket]);
 
   return (
     <div className="p-8">
@@ -52,7 +55,7 @@ const StudentDashboard = () => {
           <h2 className="text-xl mb-4">Your Assignments</h2>
           <ul>
             {assignments.map((assignment) => (
-              <li key={assignment.id} className="mb-2 flex justify-between" >
+              <li key={assignment.id} className="mb-2 flex justify-between">
                 {assignment.name}
                 <Link href={assignment.link}>
                   <span className="text-blue-500 cursor-pointer">Access</span>

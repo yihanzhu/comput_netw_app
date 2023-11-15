@@ -34,11 +34,11 @@ const Page = () => {
   };
 
   const handleUpload = (tabIndex, fileName, side) => {
-    if(!confirmedTabs.includes(tabIndex)) {
-        setMessage(`Cannot upload to tab ${tabIndex}. It's not confirmed yet!`);
-        return;
+    if (!confirmedTabs.includes(tabIndex)) {
+      setMessage(`Cannot upload to tab ${tabIndex}. It's not confirmed yet!`);
+      return;
     }
-    
+
     const newFileUploads =
       side === "Sender" ? [...senderFileUploads] : [...receiverFileUploads];
     newFileUploads[tabIndex] = true;
@@ -50,7 +50,7 @@ const Page = () => {
     setMessage(
       `File ${fileName} has been uploaded to ${side}'s ${selectedTabName}.`
     );
-};
+  };
 
   const handleSend = (message) => {
     if (
@@ -76,11 +76,11 @@ const Page = () => {
     setReceiverFileUploads(Array(6).fill(false));
   };
 
-useEffect(() => {
+  useEffect(() => {
     const socket = io("http://localhost:5100");
 
     socket.on("connect", () => {
-        console.log("Connected to Slave Backend");
+      console.log("Connected to Slave Backend");
     });
 
     socket.on("updateTab", (tabIndex) => {
@@ -88,16 +88,15 @@ useEffect(() => {
       newAdminTabColors[tabIndex] = "red";
       setAdminTabColors(newAdminTabColors);
       setUserTabColors(newAdminTabColors);
-      setConfirmedTabs(prevTabs => [...prevTabs, tabIndex]);  // Mark the tab as confirmed
+      setConfirmedTabs((prevTabs) => [...prevTabs, tabIndex]); // Mark the tab as confirmed
       console.log(`Tab ${tabIndex} color updated from Slave Backend`);
-  });
+    });
 
     // Cleanup
     return () => {
-        socket.disconnect();
+      socket.disconnect();
     };
-}, []);
-    
+  }, [adminTabColors]);
 
   return (
     <div className="p-8">
